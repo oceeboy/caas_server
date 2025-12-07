@@ -10,7 +10,7 @@ import {
   UserDocument,
   OrganizationDocument,
 } from './schemas';
-import type {
+import {
   LoginDto,
   RegisterAgentDto,
   RegisterOrgDto,
