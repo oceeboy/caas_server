@@ -23,6 +23,7 @@
     "db:down": "docker compose down",
     "db:rm": "docker compose rm -f -s -v mongo",
     "db:logs": "docker compose logs -f mongo",
+    "off:db": "docker compose down --remove-orphans -v",
     "db:exec": "docker compose exec mongo mongosh --username $MONGO_INITDB_ROOT_USERNAME --password $MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin"
   },
   "dependencies": {

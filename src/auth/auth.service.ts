@@ -4,7 +4,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
-import { LoginDto, RegisterOrgDto } from './dtos';
+import {
+  LoginDto,
+  RegisterOrgDto,
+  RegisterAgentDto,
+} from './dtos';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 
@@ -101,6 +105,25 @@ export class AuthService {
       user,
       access_token,
       refresh_token,
+    };
+  }
+
+  async registerAgent(dto: RegisterAgentDto) {
+    const user =
+      await this.usersService.registerAgent(dto);
+
+    // const { access_token, refresh_token } =
+    //   await this.signToken(
+    //     String(user._id),
+    //     user.email,
+    //     user.role,
+    //   );
+
+    return {
+      message: 'Agent registered successfully',
+      user,
+      // access_token,
+      // refresh_token,
     };
   }
 }

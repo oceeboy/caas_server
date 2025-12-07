@@ -2,12 +2,18 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Post,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterOrgDto } from './dtos';
+import {
+  LoginDto,
+  RegisterOrgDto,
+  RegisterAgentDto,
+} from './dtos';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
@@ -25,13 +31,23 @@ export class AuthController {
     // return this.authService.getProfile();
     return req.user;
   }
-
+  @HttpCode(HttpStatus.CREATED)
   @Post('register-org')
   registerOrganization(
     @Body() registerOrgDto: RegisterOrgDto,
   ) {
     return this.authService.registerOrganization(
       registerOrgDto,
+    );
+  }
+  // register agent endpoint
+  @HttpCode(HttpStatus.CREATED)
+  @Post('register-agent')
+  registerAgent(
+    @Body() registerAgentDto: RegisterAgentDto,
+  ) {
+    return this.authService.registerAgent(
+      registerAgentDto,
     );
   }
 }

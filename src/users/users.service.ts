@@ -94,7 +94,7 @@ export class UsersService {
     return admin;
   }
 
-  // register agent
+  // register agent example orgId: 6934af6aed1e1953ef393fe4
   async registerAgent(dto: RegisterAgentDto) {
     const { orgId, name, email, password } = dto;
     const normalizedEmail =
