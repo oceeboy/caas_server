@@ -9,6 +9,7 @@ import { DatabaseModule } from '../database/database.module';
 import { JwtModule } from '@nestjs/jwt';
 import { organizationProviders } from '../users/providers';
 import { WidgetController } from './widget.controller';
+import { WidgetStrategy } from './strategy';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { WidgetController } from './widget.controller';
     ...visitorProviders,
     ...visitorSessionProviders,
     ...organizationProviders,
+    WidgetStrategy,
   ],
   controllers: [WidgetController],
 })

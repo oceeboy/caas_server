@@ -1,4 +1,8 @@
-import { Schema, Document } from 'mongoose';
+import {
+  Schema,
+  Document,
+  Types,
+} from 'mongoose';
 
 export const UserSchema = new Schema(
   {
@@ -14,7 +18,7 @@ export const UserSchema = new Schema(
       select: false,
     }, // Password field for authentication not to be returned by default in queries
     orgId: {
-      type: Schema.Types.ObjectId,
+      type: Types.ObjectId,
       ref: 'Organization',
       required: true,
     },
@@ -30,10 +34,11 @@ export const UserSchema = new Schema(
 );
 
 export interface UserDocument extends Document {
+  _id: Types.ObjectId;
   name: string;
   email: string;
   password: string; // Password field for authentication
-  orgId: Schema.Types.ObjectId;
+  orgId: Types.ObjectId;
   role: 'admin' | 'agent';
   // Timestamps
   createdAt?: Date;

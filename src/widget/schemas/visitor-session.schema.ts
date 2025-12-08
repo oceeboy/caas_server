@@ -1,14 +1,18 @@
-import { Schema, Document } from 'mongoose';
+import {
+  Schema,
+  Document,
+  Types,
+} from 'mongoose';
 
 export const VisitorSessionSchema = new Schema(
   {
     orgId: {
-      type: Schema.Types.ObjectId,
+      type: Types.ObjectId,
       ref: 'Organization',
       required: true,
     },
     visitorId: {
-      type: Schema.Types.ObjectId,
+      type: Types.ObjectId,
       ref: 'Visitor',
       required: true,
     },
@@ -23,8 +27,9 @@ export const VisitorSessionSchema = new Schema(
 
 export interface VisitorSessionDocument
   extends Document {
-  orgId: Schema.Types.ObjectId;
-  visitorId: Schema.Types.ObjectId;
+  _id: Types.ObjectId;
+  orgId: Types.ObjectId;
+  visitorId: Types.ObjectId;
   ipAddress: string;
   userAgent: string;
   pageUrl: string;

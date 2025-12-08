@@ -5,6 +5,7 @@ import {
   organizationProviders,
   usersProviders,
 } from './providers';
+import { widgetSettingsProviders } from '../widget/providers';
 
 @Module({
   imports: [DatabaseModule],
@@ -12,6 +13,7 @@ import {
     UsersService,
     ...usersProviders,
     ...organizationProviders,
+    ...widgetSettingsProviders,
   ],
   exports: [UsersService],
 })

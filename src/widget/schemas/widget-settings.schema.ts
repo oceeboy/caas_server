@@ -1,4 +1,8 @@
-import { Schema, Document } from 'mongoose';
+import {
+  Schema,
+  Document,
+  Types,
+} from 'mongoose';
 
 /**
  * Widget settings schema
@@ -8,7 +12,7 @@ import { Schema, Document } from 'mongoose';
 export const WidgetSettingsSchema = new Schema(
   {
     orgId: {
-      type: Schema.Types.ObjectId,
+      type: Types.ObjectId,
       ref: 'Organization',
       required: true,
     },
@@ -46,7 +50,8 @@ export const WidgetSettingsSchema = new Schema(
 
 export interface WidgetSettingsDocument
   extends Document {
-  orgId: Schema.Types.ObjectId;
+  _id: Types.ObjectId;
+  orgId: Types.ObjectId;
   primaryColor: string;
   secondaryColor: string;
   logo: string;

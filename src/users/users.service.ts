@@ -17,6 +17,7 @@ import {
 } from './dtos';
 import * as crypto from 'crypto';
 import * as argon from 'argon2';
+import { WidgetSettingsDocument } from '../widget/schemas';
 
 @Injectable()
 export class UsersService {
@@ -25,6 +26,8 @@ export class UsersService {
     private userModel: Model<UserDocument>,
     @Inject('ORGANIZATION_MODEL')
     private organizationModel: Model<OrganizationDocument>,
+    @Inject('WIDGET_SETTINGS_MODEL')
+    private widgetSettingsModel: Model<WidgetSettingsDocument>,
   ) {}
 
   // utility to generate API key
@@ -75,9 +78,21 @@ export class UsersService {
     const org =
       (await orgDoc.save()) as OrganizationDocument;
 
+    // create default widget settings for org
+    const widgetSettingsDoc =
+      new this.widgetSettingsModel({
+        orgId: org._id,
+        // themeColor: '#000000',
+        // welcomeMessage:
+        //   'Welcome to our chat!',
+        // offlineMessage:
+        //   'We are currently offline. Please leave a message.',
+      });
+    await widgetSettingsDoc.save();
+
     const hash = await argon.hash(dto.password);
     const adminDoc = new this.userModel({
-      orgId: new Types.ObjectId(org._id as any),
+      orgId: org._id,
       name: adminName,
       email: adminEmail,
       password: hash,

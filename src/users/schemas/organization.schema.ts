@@ -1,4 +1,8 @@
-import { Schema, type Document } from 'mongoose';
+import {
+  Schema,
+  Document,
+  Types,
+} from 'mongoose';
 
 export const OrganizationSchema = new Schema(
   {
@@ -13,10 +17,9 @@ export const OrganizationSchema = new Schema(
 );
 export interface OrganizationDocument
   extends Document {
+  _id: Types.ObjectId;
   name: string;
   apiKey: string;
-
-  // Timestamps
   createdAt: Date;
   updatedAt: Date;
 }

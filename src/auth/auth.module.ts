@@ -13,6 +13,7 @@ import { JwtStrategy } from './strategy';
     JwtModule.register({}),
     forwardRef(() => UsersModule),
   ],
+
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
 })

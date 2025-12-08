@@ -1,12 +1,15 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { WidgetService } from './widget.service';
 import { WidgetAuthDto } from './dtos';
-import type { Request } from 'express';
+import { Request } from 'express';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('widget')
 export class WidgetController {
@@ -30,5 +33,16 @@ export class WidgetController {
       String(ip),
       userAgent,
     );
+  }
+  @Get('status')
+  @UseGuards(AuthGuard('jwt-widget'))
+  async getStatus(@Req() req: Request) {
+    const user = req.user;
+    // console.log('user', user);
+    // return this.widgetService.getStatus();
+
+    return {
+      user: user,
+    };
   }
 }

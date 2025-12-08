@@ -1,9 +1,13 @@
-import { Schema, Document } from 'mongoose';
+import {
+  Schema,
+  Document,
+  Types,
+} from 'mongoose';
 
 export const VisitorSchema = new Schema(
   {
     orgId: {
-      type: Schema.Types.ObjectId,
+      type: Types.ObjectId,
       ref: 'Organization',
       required: true,
     },
@@ -21,7 +25,8 @@ export const VisitorSchema = new Schema(
 );
 export interface VisitorDocument
   extends Document {
-  orgId: Schema.Types.ObjectId;
+  _id: Types.ObjectId;
+  orgId: Types.ObjectId;
   name: string;
   email: string;
   ipAddress: string;
