@@ -110,7 +110,7 @@ export class WidgetService {
       session,
     );
 
-    // create a jwt payload
+    // ##### create a jwt payload ####
 
     const payload = {
       sub: String(visitor._id),
