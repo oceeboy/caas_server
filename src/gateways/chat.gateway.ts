@@ -1,6 +1,8 @@
 /**
  * ####### VERSION_1 ####
  * this is to test a connection between two people and a group
+ * ####### VERSION_2 ####
+ * proper name convention and structure
  */
 
 import {
@@ -11,6 +13,12 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { ChatEvents } from './chat.events';
+import {
+  JoinRoomDto,
+  SendDirectMessageDto,
+  SendRoomMessageDto,
+} from './dtos/chat.dto';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class ChatGateway
@@ -30,8 +38,7 @@ export class ChatGateway
     string
   >();
 
-  async handleConnection(client: Socket) {
-    // Expect a userId in connection handshake query for simplicity
+  async onConnect(client: Socket) {
     const userId = String(
       client.handshake.query.userId || '',
     );
@@ -41,7 +48,12 @@ export class ChatGateway
     }
   }
 
-  handleDisconnect(client: Socket) {
+  async handleConnection(client: Socket) {
+    // Delegate to new name for consistency
+    await this.onConnect(client);
+  }
+
+  onDisconnect(client: Socket) {
     const userId = this.socketToUser.get(
       client.id,
     );
@@ -51,72 +63,74 @@ export class ChatGateway
     }
   }
 
-  // Join a two-person room using a deterministic roomId (e.g., `${a}|${b}` sorted)
-  @SubscribeMessage('joinRoom')
-  handleJoinRoom(
-    client: Socket,
-    payload: { me: string; peer: string },
-  ) {
+  handleDisconnect(client: Socket) {
+    // Delegate to new name for consistency
+    this.onDisconnect(client);
+  }
+
+  // Join a two-person room using a deterministic roomId
+  @SubscribeMessage(ChatEvents.RoomJoin)
+  joinRoom(client: Socket, payload: JoinRoomDto) {
     const { me, peer } = payload;
     if (!me || !peer) return;
     const roomId = this.buildRoomId(me, peer);
 
-    // Leave previous rooms except own socket room
     for (const room of client.rooms) {
       if (room !== client.id) client.leave(room);
     }
 
     client.join(roomId);
-    // Notify client that joined
-    client.emit('joinedRoom', { roomId });
+    client.emit(ChatEvents.RoomJoined, {
+      roomId,
+    });
   }
 
   // Broadcast message to the two-person room
-  @SubscribeMessage('message')
-  handleMessage(
+  @SubscribeMessage(ChatEvents.MessageSend)
+  sendRoomMessage(
     client: Socket,
-    payload: {
-      roomId?: string;
-      to?: string;
-      text: string;
-    },
+    payload: SendRoomMessageDto,
   ) {
     const { roomId, to, text } = payload;
     if (!text) return;
 
-    // If roomId provided, emit to room
+    const sender =
+      this.socketToUser.get(client.id) ||
+      client.id;
+
     if (roomId) {
-      this.server.to(roomId).emit('message', {
-        from:
-          this.socketToUser.get(client.id) ||
-          client.id,
-        text,
-        roomId,
-        at: Date.now(),
-      });
+      this.server
+        .to(roomId)
+        .emit(ChatEvents.MessageReceived, {
+          from: sender,
+          text,
+          roomId,
+          at: Date.now(),
+        });
       return;
     }
 
-    // Else if a specific peer `to` provided, resolve room and emit
     const fromUser = this.socketToUser.get(
       client.id,
     );
     if (fromUser && to) {
       const rid = this.buildRoomId(fromUser, to);
-      this.server.to(rid).emit('message', {
-        from: fromUser,
-        text,
-        roomId: rid,
-        at: Date.now(),
-      });
+      this.server
+        .to(rid)
+        .emit(ChatEvents.MessageReceived, {
+          from: fromUser,
+          text,
+          roomId: rid,
+          at: Date.now(),
+        });
     }
   }
 
   // Optional: direct emit to a user's socket
-  @SubscribeMessage('privateMessage')
-  handlePrivateMessage(
+  @SubscribeMessage(ChatEvents.DMSend)
+  sendDirectMessage(
     client: Socket,
-    payload: { to: string; text: string },
+    payload: SendDirectMessageDto,
   ) {
     const { to, text } = payload;
     if (!to || !text) return;
@@ -124,7 +138,7 @@ export class ChatGateway
     if (toSocketId) {
       this.server
         .to(toSocketId)
-        .emit('privateMessage', {
+        .emit(ChatEvents.DMReceived, {
           from:
             this.socketToUser.get(client.id) ||
             client.id,
