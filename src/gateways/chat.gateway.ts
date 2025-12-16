@@ -258,7 +258,7 @@ export class ChatGateway
       );
 
     this.server
-      .to(`org:${orgId}`)
+      .to(`org:${orgId}:agents`)
       .emit('chat.test', savedMessage);
   }
 
