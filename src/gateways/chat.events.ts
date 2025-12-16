@@ -5,6 +5,7 @@ export const ChatEvents = {
   MessageReceived: 'chat.message.received', // Message received in room
   DMSend: 'chat.dm.send', // Direct message send
   DMReceived: 'chat.dm.received', // Direct message received
+  Test: 'chat.test', // Test event
 } as const;
 
 export type ChatEvent =

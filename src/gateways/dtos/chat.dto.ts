@@ -13,3 +13,7 @@ export interface SendDirectMessageDto {
   to: string;
   text: string;
 }
+
+export interface TestDto {
+  message: string;
+}
