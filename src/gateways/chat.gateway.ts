@@ -14,7 +14,9 @@ import { ChatService } from './chat.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 
-const messageLogger = new Logger('MessageLogger');
+const messageLogger = new Logger(
+  'ChatMessageLogger',
+);
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class ChatGateway
@@ -29,171 +31,154 @@ export class ChatGateway
   ) {}
   @WebSocketServer() server: Server;
 
-  private logger = new Logger(ChatGateway.name);
+  // =======================================================================
+  // in-app memory
+  // =======================================================================
 
-  // create a map to store connected clients
-  private clients = new Map<
-    string,
-    {
-      socket: Socket;
-      userId: string;
-      token: string;
-    }
-  >();
+  private users = new Map<string, any>();
+  // =======================================================================
+  // handle client connection
+  // =======================================================================
 
-  private socketToUser = new Map<
-    string,
-    string
-  >();
+  // connection helper
 
-  private visitorDetails = new Map<string, any>();
-
-  async connect(client: Socket) {
-    // fetch token from client handshake query
+  async connectClientConnectionToSoket(
+    client: Socket,
+  ) {
+    // AUTHENTICATION
     const token = client.handshake.auth.token;
     if (!token) {
-      this.logger.error(
-        `No token provided by client: ${client.id}`,
+      messageLogger.error(
+        `Client connection rejected: No token provided`,
       );
-      // if there is no token, disconnect the client
-      client.disconnect();
-
+      await this.disconnectClientConnectionFromSocket(
+        client,
+      );
       return;
     }
-    // verify token
+
     try {
-      const payload = this.jwtService.verify(
-        token,
-        {
-          secret: this.configService.get<string>(
+      const payload =
+        await this.jwtService.verifyAsync(token, {
+          secret: this.configService.get(
             'VISITOR_JWT_SECRET',
           ),
-        },
+        });
+      client.data = {
+        userId: payload.sub,
+        role: payload.role,
+        orgId: payload.orgId,
+        browerId: payload.browerId,
+      };
+
+      //====! inject to server !====
+
+      // ✅ Join rooms
+      client.join(`org:${payload.orgId}`);
+
+      if (payload.role === 'visitor') {
+        client.join(`visitor:${payload.sub}`);
+      }
+
+      if (
+        payload.role === 'agent' ||
+        payload.role === 'admin'
+      ) {
+        client.join(`agent:${payload.sub}`);
+      }
+
+      messageLogger.log(
+        `Client connected: ${client.data.userId}`,
       );
-      this.logger.debug(
-        `Token payload for client ${client.id}: ${JSON.stringify(
-          payload,
-        )}`,
-      );
-      this.visitorDetails.set(client.id, payload);
+      // emit a successful connection message to client
+      client.emit('connection', {
+        message: 'Authentication successful',
+      });
     } catch (error) {
-      this.logger.error(
-        `Error verifying token for client ${client.id}: ${error.message}`,
+      if (error.name === 'JsonWebTokenError') {
+        messageLogger.error(
+          `ERROR_MESSAGE: ${error.message} \n`,
+        );
+
+        // emit specific error message to client
+        client.emit('error', {
+          message: `Authentication error: ${error.message}`,
+        });
+
+        await this.disconnectClientConnectionFromSocket(
+          client,
+        );
+        return;
+      }
+
+      await this.disconnectClientConnectionFromSocket(
+        client,
       );
-      client.disconnect();
-      return;
     }
-
-    const userId = client.handshake.query.userId;
-    if (!userId) {
-      this.logger.error(
-        `No userId provided by client: ${client.id}`,
-      );
-      return;
-    }
-
-    this.socketToUser.set(
-      client.id,
-      userId as string,
-    );
-
-    this.clients.set(client.id, {
-      socket: client,
-      userId: userId as string,
-      token: token,
-    });
-    this.logger.debug(
-      `Token from client ${client.id}: ${token}`,
-    );
-  }
-
-  async disconnect(client: Socket) {
-    this.socketToUser.delete(client.id);
-    this.clients.delete(client.id);
-    this.logger.debug(
-      `Client disconnected: ${client.id}`,
-    );
   }
 
   async handleConnection(client: Socket) {
-    await this.connect(client);
-    const user = this.socketToUser.get(client.id);
-    this.broadcastMessage('chat.test', {
-      message: `Welcome ${user}  ${client.id}!`,
-    });
-  }
-
-  handleDisconnect(client: Socket) {
-    this.logger.debug(
-      `Client disconnected: ${client.id}`,
-    );
-    this.socketToUser.delete(client.id);
-    this.clients.delete(client.id);
-  }
-
-  // send a message to all connected clients
-  private broadcastMessage(
-    event: string,
-    message: any,
-  ) {
-    this.server.emit(event, message);
-  }
-  // send a message to a specific client
-  private sendMessageToClient(
-    client: Socket,
-    event: string,
-    message: any,
-  ) {
-    client.emit(event, message);
-  }
-
-  @SubscribeMessage('chat.test')
-  handleTestMessage(
-    client: Socket,
-    payload: any,
-  ) {
-    const user = this.socketToUser.get(client.id);
-
-    const clientData = this.clients.get(
-      client.id,
-    );
-
-    messageLogger.log(
-      `This is the user: ${user} sending a test message.`,
-    );
-    messageLogger.debug(
-      ` test message from ${user}: ${JSON.stringify(
-        payload,
-      )}`,
-    );
-    this.sendMessageToClient(
+    await this.connectClientConnectionToSoket(
       client,
-      'chat.test',
-      {
-        message: `Hello from server, ${user}! ${payload.message}`,
-      },
     );
   }
-  // send a direct message to a specific user
-  private sendDirectMessageToUser(
-    userId: string,
-    event: string,
-    message: any,
+
+  // =======================================================================
+  // handle client disconnection
+  // =======================================================================
+  // disconnection helper
+  async disconnectClientConnectionFromSocket(
+    client: Socket,
   ) {
-    const client = Array.from(
-      this.clients.values(),
-    ).find((client) => client.userId === userId);
-    if (client) {
-      this.sendMessageToClient(
-        client.socket,
-        event,
-        message,
+    client.disconnect();
+  }
+  async handleDisconnect(client: Socket) {
+    await this.disconnectClientConnectionFromSocket(
+      client,
+    );
+  }
+
+  // =======================================================================
+  // handle incoming chat messages (testing: vistor)
+  // =======================================================================
+  @SubscribeMessage('chat.message.send')
+  async handleChatMessage(
+    client: Socket,
+    payload: { text: string },
+  ) {
+    try {
+      const userId = client.data;
+      if (!userId) {
+        throw new BadGatewayException(
+          'User not authenticated',
+        );
+      }
+
+      // log the received message
+      messageLogger.log(
+        `Received message from ${userId}: ${payload.text}`,
       );
+
+      // send to user
+      client.emit('chat.message.received', {
+        userId,
+        text: payload.text,
+      });
+    } catch (error) {
+      messageLogger.error(
+        `Error handling chat message: ${error.message}`,
+      );
+      client.emit('error', {
+        message: `Error processing message: ${error.message}`,
+      });
     }
   }
+  // =======================================================================
+  // private dm test to
+  // =======================================================================
 
   @SubscribeMessage('chat.dm.send')
-  handleDirectMessage(
+  async sendPrivateMessage(
     client: Socket,
     payload: {
       toUserId: string;
@@ -201,30 +186,30 @@ export class ChatGateway
     },
   ) {
     const { toUserId, message } = payload;
-    const fromUserId = this.socketToUser.get(
-      client.id,
-    );
-    if (!fromUserId) {
-      this.logger.error(
-        `Unknown sender for client: ${client.id}`,
-      );
+    const user = client.data.userId;
+    const role = client.data.role;
+
+    if (role !== 'agent' && role !== 'admin') {
       return;
     }
-
-    messageLogger.log(
-      `${fromUserId} sending DM to ${payload.toUserId}: ${payload.message}`,
-    );
-    this.logger.debug(
-      `Direct message from ${fromUserId} to ${payload.toUserId}: ${payload.message}`,
+    messageLogger.debug(
+      `${user} with role ${role} sending to ${toUserId} this message ${JSON.stringify(payload)}`,
     );
 
-    this.sendDirectMessageToUser(
-      payload.toUserId,
-      'chat.dm.received',
-      {
-        fromUserId,
-        message: payload.message,
-      },
-    );
+    // client.emit(
+    //   'chat.test',
+    //   `this proves ${user} is an ${role} `,
+    // );
+
+    this.server
+      .to(`visitor:${toUserId}`)
+      .emit(
+        'chat.test',
+        `this proves ${user} is an ${role} `,
+      );
   }
+
+  // =======================================================================
+  // helper methods
+  // =======================================================================
 }

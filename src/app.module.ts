@@ -7,6 +7,8 @@ import { DatabaseModule } from './database/database.module';
 import { UsersModule } from './users/users.module';
 import { WidgetModule } from './widget/widget.module';
 import { GatewaysModule } from './gateways/gateways.module';
+import { AgentModule } from './agent/agent.module';
+import { MessageModule } from './message/message.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { GatewaysModule } from './gateways/gateways.module';
     UsersModule,
     WidgetModule,
     GatewaysModule,
+    AgentModule,
+    MessageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

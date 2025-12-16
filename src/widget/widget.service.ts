@@ -54,10 +54,10 @@ export class WidgetService {
         'Invalid API keys provided',
       );
     }
-    this.logger.debug(
-      'Widget authentication called with DTO:',
-      dto,
-    );
+    // this.logger.debug(
+    //   'Widget authentication called with DTO:',
+    //   dto,
+    // );
     // create or find visitor and session logic to be implemented
 
     /**
@@ -105,10 +105,10 @@ export class WidgetService {
         pageUrl,
       });
 
-    this.logger.debug(
-      'Visitor session created:',
-      session,
-    );
+    // this.logger.debug(
+    //   'Visitor session created:',
+    //   session,
+    // );
 
     // ##### create a jwt payload ####
 
@@ -117,7 +117,7 @@ export class WidgetService {
       orgId: String(organization._id),
       sessionId: String(session._id),
       role: 'visitor',
-      browserId,
+      // browserId,
     };
 
     // get widget settings for organization
