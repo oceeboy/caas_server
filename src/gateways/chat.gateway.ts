@@ -174,11 +174,11 @@ export class ChatGateway
     }
   }
   // =======================================================================
-  // private dm test to
+  // private dm test from agent to visitor
   // =======================================================================
 
   @SubscribeMessage('chat.dm.send')
-  async sendPrivateMessage(
+  async sendVisitorMessage(
     client: Socket,
     payload: {
       toUserId: string;
@@ -203,10 +203,38 @@ export class ChatGateway
 
     this.server
       .to(`visitor:${toUserId}`)
-      .emit(
-        'chat.test',
-        `this proves ${user} is an ${role} `,
-      );
+      .emit('chat.test', {
+        message: message,
+      });
+  }
+
+  //======================================================
+  // private dm test from visitor to agent
+  // ======================================================
+  @SubscribeMessage('visitordm.send')
+  async sendAgentMessage(
+    client: Socket,
+    payload: {
+      toUserId: string;
+      message: string;
+    },
+  ) {
+    const { toUserId, message } = payload;
+    const user = client.data.userId;
+    const role = client.data.role;
+
+    if (role !== 'visitor') {
+      return;
+    }
+    messageLogger.debug(
+      `${user} with role ${role} sending to ${toUserId} this message ${JSON.stringify(payload)}`,
+    );
+
+    this.server
+      .to(`agent:${toUserId}`)
+      .emit('chat.test', {
+        message: `Direct message from visitor ${user} \n: ${message}`,
+      });
   }
 
   // =======================================================================
