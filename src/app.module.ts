@@ -9,6 +9,7 @@ import { WidgetModule } from './widget/widget.module';
 import { GatewaysModule } from './gateways/gateways.module';
 import { AgentModule } from './agent/agent.module';
 import { MessageModule } from './message/message.module';
+import { ConversationsModule } from './conversations/conversations.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { MessageModule } from './message/message.module';
     GatewaysModule,
     AgentModule,
     MessageModule,
+    ConversationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

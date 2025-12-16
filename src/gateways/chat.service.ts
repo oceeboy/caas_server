@@ -1,3 +1,5 @@
+import { MessageService } from 'src/message/message.service';
+
 export class ChatService {
   /**
    * this service will handle chat related business logic testing
@@ -5,7 +7,9 @@ export class ChatService {
    *
    *
    */
-  constructor() {}
+  constructor(
+    private messageService: MessageService,
+  ) {}
 
   private userDetails = new Map<string, any>();
 
@@ -40,6 +44,8 @@ export class ChatService {
   async deleteVisitorDetails(visitorId: string) {
     this.visitorDetails.delete(visitorId);
   }
+
+  // create and store messages
 
   // message storage can be added here
 }

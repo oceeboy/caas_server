@@ -13,6 +13,7 @@ import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { MessageService } from '../message/message.service';
 
 const messageLogger = new Logger(
   'ChatMessageLogger',
@@ -25,6 +26,7 @@ export class ChatGateway
     OnGatewayDisconnect
 {
   constructor(
+    private messageService: MessageService,
     private chatService: ChatService,
     private jwtService: JwtService,
     private configService: ConfigService,
@@ -84,6 +86,9 @@ export class ChatGateway
         payload.role === 'agent' ||
         payload.role === 'admin'
       ) {
+        client.join(
+          `org:${payload.orgId}:agents`,
+        );
         client.join(`agent:${payload.sub}`);
       }
 
@@ -192,6 +197,15 @@ export class ChatGateway
     if (role !== 'agent' && role !== 'admin') {
       return;
     }
+
+    const savedMessage =
+      await this.messageService.createAgentMessageRecord(
+        {
+          content: message,
+          senderId: user,
+        },
+      );
+
     messageLogger.debug(
       `${user} with role ${role} sending to ${toUserId} this message ${JSON.stringify(payload)}`,
     );
@@ -203,9 +217,7 @@ export class ChatGateway
 
     this.server
       .to(`visitor:${toUserId}`)
-      .emit('chat.test', {
-        message: message,
-      });
+      .emit('chat.test', savedMessage);
   }
 
   //======================================================
@@ -222,6 +234,7 @@ export class ChatGateway
     const { toUserId, message } = payload;
     const user = client.data.userId;
     const role = client.data.role;
+    const orgId = client.data.orgId;
 
     if (role !== 'visitor') {
       return;
@@ -230,11 +243,23 @@ export class ChatGateway
       `${user} with role ${role} sending to ${toUserId} this message ${JSON.stringify(payload)}`,
     );
 
+    // this.server
+    //   .to(`agent:${toUserId}`)
+    //   .emit('chat.test', {
+    //     message: `Direct message from visitor ${user} \n: ${message}`,
+    //   });
+
+    const savedMessage =
+      await this.messageService.createVisitorMessageRecord(
+        {
+          content: message,
+          senderId: user,
+        },
+      );
+
     this.server
-      .to(`agent:${toUserId}`)
-      .emit('chat.test', {
-        message: `Direct message from visitor ${user} \n: ${message}`,
-      });
+      .to(`org:${orgId}`)
+      .emit('chat.test', savedMessage);
   }
 
   // =======================================================================
