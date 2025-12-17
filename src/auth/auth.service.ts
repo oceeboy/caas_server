@@ -40,6 +40,9 @@ export class AuthService {
     };
 
     const secret = this.config.get('JWT_SECRET');
+    const refreshSecret = this.config.get(
+      'JWT_REFRESH_SECRET',
+    );
     // accessToken
     const accessToken = await this.jwt.signAsync(
       payload,
@@ -55,7 +58,7 @@ export class AuthService {
       payload,
       {
         expiresIn: '7d',
-        secret: secret,
+        secret: refreshSecret,
       },
     );
 
@@ -125,5 +128,19 @@ export class AuthService {
       // access_token,
       // refresh_token,
     };
+  }
+
+  // refresh token logic to generate new access token
+  async refreshToken(
+    userId: string,
+    email: string,
+    role?: string,
+  ) {
+    const { access_token } = await this.signToken(
+      userId,
+      email,
+      role,
+    );
+    return { access_token };
   }
 }

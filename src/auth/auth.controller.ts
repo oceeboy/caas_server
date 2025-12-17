@@ -50,4 +50,14 @@ export class AuthController {
       registerAgentDto,
     );
   }
+  @Post('refresh-token')
+  @UseGuards(AuthGuard('jwt-refresh'))
+  refreshToken(@Req() req: any) {
+    const user = req.user;
+    return this.authService.refreshToken(
+      user._id,
+      user.email,
+      user.role,
+    );
+  }
 }
