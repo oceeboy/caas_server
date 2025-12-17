@@ -60,4 +60,9 @@ export class AuthController {
       user.role,
     );
   }
+  @Get('session-info')
+  @UseGuards(AuthGuard('jwt'))
+  sessionInfo() {
+    return this.authService.sessionInfo();
+  }
 }

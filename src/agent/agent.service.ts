@@ -48,7 +48,6 @@ export class AgentService {
     userAgent?: string,
   ): Promise<{ token: string; message: string }> {
     const { userId, name, email } = dto;
-
     const user =
       await this.usersService.getProfile(userId);
     if (!user) {

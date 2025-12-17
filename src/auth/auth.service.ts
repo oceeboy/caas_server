@@ -11,7 +11,17 @@ import {
 } from './dtos';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-
+/**
+ * Authentication service to handle login, registration, and token management.
+ * Provides methods for user login, organization and agent registration,
+ * and token refreshing using JWT.
+ *
+ * todo:  for version 2.0
+ * - Rate limiting for refresh token requests.
+ * - Logging and monitoring for authentication events. ## already in use but improve logging later
+ * - Support for additional authentication methods (e.g., OAuth).
+ * - User activity tracking and analytics.
+ */
 @Injectable()
 export class AuthService {
   constructor(
@@ -136,11 +146,27 @@ export class AuthService {
     email: string,
     role?: string,
   ) {
+    // rate limit refresh token requests per user if needed
+    const now = Date.now();
+    this.logger.log(
+      `Refreshing token for user ${userId} at ${new Date(
+        now,
+      ).toISOString()}`,
+    );
+
     const { access_token } = await this.signToken(
       userId,
       email,
       role,
     );
     return { access_token };
+  }
+
+  async sessionInfo() {
+    return {
+      success: true,
+      message: 'Session is valid',
+      timestamp: new Date().toISOString(),
+    };
   }
 }
