@@ -54,8 +54,18 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt-refresh'))
   refreshToken(@Req() req: any) {
     const user = req.user;
+
+    const token: string =
+      req.headers['authorization']?.split(' ')[1];
+    if (!token) {
+      throw new Error(
+        'No refresh token provided',
+      );
+    }
+
     return this.authService.refreshToken(
       user._id,
+      token,
       user.email,
       user.role,
     );

@@ -176,7 +176,9 @@ export class UsersService {
         'Invalid credentials',
       );
     return {
-      userId: user._id,
+      _id: user._id,
+      email: user.email,
+      name: user.name,
       orgId: user.orgId,
       role: user.role,
     };

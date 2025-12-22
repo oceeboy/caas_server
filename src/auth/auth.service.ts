@@ -77,7 +77,14 @@ export class AuthService {
       refresh_token: refreshToken,
     };
   }
-
+  private async invalidateJwtTokens(
+    token: string,
+  ) {
+    // Logic to invalidate the token (e.g., add to a blacklist)
+    this.logger.log(
+      `Invalidating token: ${token}`,
+    );
+  }
   async login(dto: LoginDto) {
     const user =
       await this.usersService.validateLogin(dto);
@@ -89,7 +96,7 @@ export class AuthService {
 
     const { access_token, refresh_token } =
       await this.signToken(
-        String(user.userId),
+        String(user._id),
         dto.email,
         user.role,
       );
@@ -143,6 +150,7 @@ export class AuthService {
   // refresh token logic to generate new access token
   async refreshToken(
     userId: string,
+    token: string,
     email: string,
     role?: string,
   ) {
@@ -153,6 +161,7 @@ export class AuthService {
         now,
       ).toISOString()}`,
     );
+    await this.invalidateJwtTokens(token);
 
     const { access_token } = await this.signToken(
       userId,
