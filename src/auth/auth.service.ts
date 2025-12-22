@@ -101,7 +101,16 @@ export class AuthService {
         user.role,
       );
 
-    return { user, access_token, refresh_token };
+    // to let the frontend know the time the accesstoken will expire
+
+    const expiresInSeconds = 900; // 15 minutes
+
+    return {
+      user,
+      access_token,
+      refresh_token,
+      expiresInSeconds,
+    };
   }
 
   async registerOrganization(
