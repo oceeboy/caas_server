@@ -66,6 +66,15 @@ export class ChatGateway
             'VISITOR_JWT_SECRET',
           ),
         });
+      if (!payload || !payload.sub) {
+        messageLogger.error(
+          `Client connection rejected: Invalid token payload`,
+        );
+        await this.disconnectClientConnectionFromSocket(
+          client,
+        );
+        return;
+      }
       client.data = {
         userId: payload.sub,
         role: payload.role,

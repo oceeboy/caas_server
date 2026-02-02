@@ -2,7 +2,7 @@ import {
   Inject,
   Injectable,
 } from '@nestjs/common';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import {
   AgentActivityDocument,
   AgentDocument,
@@ -46,7 +46,11 @@ export class AgentService {
     },
     ipAddress?: string,
     userAgent?: string,
-  ): Promise<{ token: string; message: string }> {
+  ): Promise<{
+    token: string;
+    message: string;
+    expiresIn: number;
+  }> {
     const { userId, name, email } = dto;
     const user =
       await this.usersService.getProfile(userId);
@@ -92,6 +96,7 @@ export class AgentService {
 
     return {
       token: token,
+      expiresIn: 3600, // token expiration time in seconds
       message:
         'Agent record created successfully',
     };
@@ -105,10 +110,22 @@ export class AgentService {
     // Implementation for deleting a chat agent record
   }
 
+  async getAgentById(agentId: string) {
+    /// check if the agentId is valid ObjectId
+    if (!isValidObjectId(agentId)) {
+      throw new Error('Invalid agent ID');
+    }
+    return this.agentModel.findById(agentId);
+  }
+
   // ==============================================================
   // Agent Session Management
   // ==============================================================
   async startAgentSession() {
     // Implementation for starting an agent session
   }
+}
+
+function isValidObjectId(id: string): boolean {
+  return mongoose.Types.ObjectId.isValid(id);
 }

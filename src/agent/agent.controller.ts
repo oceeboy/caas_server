@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Ip,
   Post,
   Req,
@@ -41,6 +42,17 @@ export class AgentController {
       },
       ipAddress,
       userAgent,
+    );
+  }
+
+  @Get(':id')
+  @UseGuards(AuthGuard('jwt'))
+  async getAgentById(@Req() request: Request) {
+    const user = (request as any).user;
+    const agentId = user.agentId; // assuming the JWT contains agentId
+
+    return await this.agentService.getAgentById(
+      agentId,
     );
   }
 }
