@@ -15,6 +15,7 @@ import {
   WidgetSettingsDocument,
 } from './schemas';
 import { WidgetAuthDto } from './dtos';
+import { ConversationsService } from '../conversations/conversations.service';
 
 @Injectable()
 export class WidgetService {
@@ -29,11 +30,37 @@ export class WidgetService {
     private readonly visitorModel: Model<VisitorDocument>,
     @Inject('VISITOR_SESSION_MODEL')
     private visitorSessionModel: Model<VisitorSessionDocument>,
+    private readonly conversationService: ConversationsService,
   ) {}
 
   private readonly logger = new Logger(
     WidgetService.name,
   );
+
+  private convertTypesObjectIdToString(
+    obj: any,
+  ): any {
+    if (obj instanceof Types.ObjectId) {
+      return obj.toString();
+    } else if (Array.isArray(obj)) {
+      return obj.map((item) =>
+        this.convertTypesObjectIdToString(item),
+      );
+    } else if (
+      typeof obj === 'object' &&
+      obj !== null
+    ) {
+      const newObj = {};
+      for (const key in obj) {
+        newObj[key] =
+          this.convertTypesObjectIdToString(
+            obj[key],
+          );
+      }
+      return newObj;
+    }
+    return obj;
+  }
 
   // widget authentication for visitors
   async authenticateVisitor(
@@ -54,6 +81,7 @@ export class WidgetService {
         'Invalid API keys provided',
       );
     }
+
     // this.logger.debug(
     //   'Widget authentication called with DTO:',
     //   dto,
@@ -85,7 +113,26 @@ export class WidgetService {
       visitor.ipAddress = ip;
       await visitor.save();
     }
-    // create or find visitor session logic to be implemented
+
+    const conversation =
+      await this.conversationService.startConversation(
+        {
+          visitorId:
+            this.convertTypesObjectIdToString(
+              visitor._id,
+            ),
+          orgId:
+            this.convertTypesObjectIdToString(
+              organization._id,
+            ),
+        },
+      );
+
+    console.log(
+      'Conversation started:',
+      conversation,
+    );
+
     /***
      * ##################################################
      * there is no need to check for a session already existing
@@ -134,19 +181,33 @@ export class WidgetService {
       ),
     });
 
+    // there needs to be a refresh token will be implemented later
+    const refreshToken = this.jwt.sign(payload, {
+      expiresIn: '7d',
+      secret: this.config.get(
+        'VISITOR_JWT_SECRET',
+      ),
+    });
+
+    // return {
+    //   token,
+    //   // organizationData: organization,
+    //   // headerDetails: {
+    //   //   ip,
+    //   //   userAgent,
+    //   // },
+    //   // setting: widgetSettings,
+    //   message:
+    //     'Widget authentication not yet implemented',
+    //   subNote:
+    //     'Visitor and session creation logic is pending',
+    //   testNote: `Received browserId: ${browserId}, pageUrl: ${pageUrl}`,
+    // };
+
     return {
-      token,
-      organizationData: organization,
-      headerDetails: {
-        ip,
-        userAgent,
-      },
-      setting: widgetSettings,
-      message:
-        'Widget authentication not yet implemented',
-      subNote:
-        'Visitor and session creation logic is pending',
-      testNote: `Received browserId: ${browserId}, pageUrl: ${pageUrl}`,
+      widgetToken: token,
+      conversationId: conversation.conversationId,
+      visitorId: visitor._id.toString(),
     };
   }
   getStatus() {

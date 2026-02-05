@@ -1,4 +1,7 @@
-import { Module } from '@nestjs/common';
+import {
+  forwardRef,
+  Module,
+} from '@nestjs/common';
 import { WidgetService } from './widget.service';
 import {
   widgetSettingsProviders,
@@ -10,11 +13,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { organizationProviders } from '../users/providers';
 import { WidgetController } from './widget.controller';
 import { WidgetStrategy } from './strategy';
+import { ConversationsModule } from '../conversations/conversations.module';
 
 @Module({
   imports: [
     DatabaseModule,
     JwtModule.register({}),
+    forwardRef(() => ConversationsModule),
   ],
   providers: [
     WidgetService,
