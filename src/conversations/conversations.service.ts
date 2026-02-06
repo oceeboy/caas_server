@@ -2,6 +2,7 @@ import {
   Inject,
   Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { VisitorConversationDto } from './dtos';
 import { ConversationDocument } from './schemas';
@@ -58,11 +59,37 @@ export class ConversationsService {
     };
   }
 
-  async getConversations() {
-    // this conversation need to be paginated and filtered by orgId in real implementation
+  /**
+   * @title - Get Conversations in ConversationsService
+   * @description - Retrieves conversations filtered by orgId, supports pagination and sorting for scalability.
+   * @param data - Contains orgId, optional pagination and sorting parameters
+   * @returns Array of conversation summaries
+   */
+  async getConversations(data: {
+    orgId: string;
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }) {
+    const {
+      orgId,
+      page = 1,
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = data;
+
+    const skip = (page - 1) * limit;
+
     const conversations =
       await this.conversationModel
-        .find()
+        .find({ orgId })
+        .sort({
+          [sortBy]: sortOrder === 'asc' ? 1 : -1,
+        })
+        .skip(skip)
+        .limit(limit)
         .lean()
         .exec();
 
@@ -78,13 +105,19 @@ export class ConversationsService {
 
   async getConversationById(
     conversationId: string,
+    orgId: string,
   ) {
     const conversation =
-      await this.conversationModel.findById(
-        conversationId,
-      );
+      await this.conversationModel
+        .findById(conversationId)
+        .where('orgId')
+        .equals(orgId)
+        .lean()
+        .exec();
     if (!conversation) {
-      throw new Error('Conversation not found');
+      throw new NotFoundException(
+        'Conversation not found',
+      );
     }
     return {
       conversationId: conversation._id.toString(),
