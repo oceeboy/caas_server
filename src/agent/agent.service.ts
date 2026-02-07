@@ -1,6 +1,9 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
+  NotAcceptableException,
+  NotFoundException,
 } from '@nestjs/common';
 import mongoose, { Model } from 'mongoose';
 import {
@@ -20,7 +23,7 @@ export class AgentService {
     @Inject('AGENT_SESSION_MODEL')
     private agentSessionModel: Model<AgentSessionDocument>,
     @Inject('AGENT_ACTIVITY_MODEL')
-    private agentActivityModel: Model<AgentActivityDocument>,
+    private agentActivityModel: Model<AgentActivityDocument>, // for tracking agent activities like login, logout, message handling, etc. it an audit feature for now we can just log activities in the console but in the future we can store them in the database for analytics and monitoring purposes.
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
@@ -110,12 +113,29 @@ export class AgentService {
     // Implementation for deleting a chat agent record
   }
 
-  async getAgentById(agentId: string) {
+  async getAgentById(
+    agentId: string,
+    orgId: string,
+  ) {
     /// check if the agentId is valid ObjectId
     if (!isValidObjectId(agentId)) {
-      throw new Error('Invalid agent ID');
+      throw new NotAcceptableException(
+        'Invalid agent ID',
+      );
     }
-    return this.agentModel.findById(agentId);
+    // return this.agentModel.findById(agentId);
+    const agent = await this.agentModel
+      .findById(agentId)
+      .where('orgId')
+      .equals(orgId)
+      .lean()
+      .exec();
+    if (!agent) {
+      throw new NotFoundException(
+        'Agent not found',
+      );
+    }
+    return agent;
   }
 
   // ==============================================================

@@ -7,12 +7,14 @@ import {
 import { VisitorConversationDto } from './dtos';
 import { ConversationDocument } from './schemas';
 import { Model } from 'mongoose';
+import { AgentService } from '../agent/agent.service';
 
 @Injectable()
 export class ConversationsService {
   constructor(
     @Inject('CONVERSATION_MODEL')
     private readonly conversationModel: Model<ConversationDocument>,
+    private readonly agentService: AgentService, // Inject AgentService to manage agent interactions within conversations
   ) {}
   private readonly logger = new Logger(
     ConversationsService.name,
@@ -92,6 +94,16 @@ export class ConversationsService {
         .limit(limit)
         .lean()
         .exec();
+
+    if (
+      !conversations ||
+      conversations.length === 0
+    ) {
+      this.logger.warn(
+        `No conversations found for orgId: ${orgId}`,
+      );
+      return [];
+    }
 
     return conversations.map((conversation) => ({
       conversationId: conversation._id.toString(),

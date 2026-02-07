@@ -26,5 +26,6 @@ import { AgentController } from './agent.controller';
     ...agentActivityProviders,
   ],
   controllers: [AgentController],
+  exports: [AgentService],
 })
 export class AgentModule {}

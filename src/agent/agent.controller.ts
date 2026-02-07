@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { AgentService } from './agent.service';
 import { AuthGuard } from '@nestjs/passport';
+import type { Request } from 'express';
 
 @Controller('agent')
 export class AgentController {
@@ -48,11 +49,15 @@ export class AgentController {
   @Get(':id')
   @UseGuards(AuthGuard('jwt'))
   async getAgentById(@Req() request: Request) {
-    const user = (request as any).user;
-    const agentId = user.agentId; // assuming the JWT contains agentId
+    const agentId = request.params.id;
 
-    return await this.agentService.getAgentById(
-      agentId,
-    );
+    const orgId = request.user?.orgId;
+
+    const agent =
+      await this.agentService.getAgentById(
+        agentId,
+        orgId?.toString() || '',
+      );
+    return agent;
   }
 }
