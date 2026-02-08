@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Inject,
   Injectable,
   NotAcceptableException,
@@ -143,6 +144,68 @@ export class AgentService {
   // ==============================================================
   async startAgentSession() {
     // Implementation for starting an agent session
+  }
+
+  async endAgentSession() {
+    // Implementation for ending an agent session
+  }
+
+  async registerAgent(dto: {
+    userId: string;
+    name: string;
+    email: string;
+  }) {
+    // Implementation for registering an agent (if needed, since we are creating agent records based on user identity, we may not need a separate registration process for agents)
+
+    const { userId, name, email } = dto;
+
+    // validate if agent record already exists with email
+    const existingAgent =
+      await this.agentModel.findOne({
+        agentEmail: email,
+      });
+    if (existingAgent) {
+      throw new ConflictException(
+        'Agent with this email already exists',
+      );
+    }
+
+    const user =
+      await this.usersService.getProfile(userId);
+
+    // create agent record based on user identity
+
+    const agent = new this.agentModel({
+      agentName: name,
+      agentEmail: email,
+      handleBy: user._id,
+      orgId: user.orgId,
+      role: 'agent',
+    });
+    await agent.save();
+
+    return {
+      message: 'Agent registered successfully',
+      agentId: String(agent._id),
+    };
+  }
+
+  async trackAgentActivity() {
+    // Implementation for tracking agent activities like login, logout, message handling, etc. it an audit feature for now we can just log activities in the console but in the future we can store them in the database for analytics and monitoring purposes.
+  }
+
+  async getAgentsByOrgId(orgId: string) {
+    if (!isValidObjectId(orgId)) {
+      throw new NotAcceptableException(
+        'Invalid organization ID',
+      );
+    }
+    const agents = await this.agentModel
+      .find({ orgId })
+      .select('-handleBy -orgId -__v') // exclude sensitive fields
+      .lean()
+      .exec();
+    return agents;
   }
 }
 

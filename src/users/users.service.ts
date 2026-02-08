@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ConflictException,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { Model, Types } from 'mongoose';
 import {
@@ -190,7 +191,7 @@ export class UsersService {
       .findById(userId)
       .lean();
     if (!user)
-      throw new BadRequestException(
+      throw new NotFoundException(
         'User not found',
       );
     // omit sensitive fields

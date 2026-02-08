@@ -20,7 +20,7 @@ export const ConversationSchema = new Schema(
       type: Types.ObjectId,
       ref: 'Agent',
       required: false,
-    },
+    }, // agentId is optional because a conversation may start without an assigned agent multiple agents can join a conversation, but for simplicity we will track only the primary agent in this field. We can extend this in the future to support multiple agents if needed.
     status: {
       type: String,
       enum: ['open', 'closed', 'pending'],

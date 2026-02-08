@@ -266,6 +266,7 @@ export class ChatGateway
         },
       );
 
+    // emit the saved message to the agents in the organization tradeoff is that it will be more real time but it will also be more expensive because we need to emit the message to all agents in the organization but if we emit to a specific agent then we need to have a way to know which agent is handling the conversation with the visitor and that will require some additional logic to track the conversation and agent assignment but for now we can just emit to all agents in the organization and in the future we can optimize it by tracking the conversation and agent assignment
     this.server
       .to(`org:${orgId}:agents`)
       .emit('chat.test', savedMessage);

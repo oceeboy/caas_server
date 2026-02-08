@@ -2,11 +2,12 @@ import {
   Inject,
   Injectable,
   Logger,
+  NotAcceptableException,
   NotFoundException,
 } from '@nestjs/common';
 import { VisitorConversationDto } from './dtos';
 import { ConversationDocument } from './schemas';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { AgentService } from '../agent/agent.service';
 
 @Injectable()
@@ -19,6 +20,10 @@ export class ConversationsService {
   private readonly logger = new Logger(
     ConversationsService.name,
   );
+
+  private isValidObjectId(id: string): boolean {
+    return mongoose.Types.ObjectId.isValid(id);
+  }
 
   /**
    * @title - Start Conversation in ConversationsService
@@ -109,16 +114,26 @@ export class ConversationsService {
       conversationId: conversation._id.toString(),
       status: conversation.status,
       visitorId: conversation.visitorId,
+      agentId: conversation.agentId
+        ? conversation.agentId.toString()
+        : null,
       orgId: conversation.orgId,
       createdAt: conversation.createdAt,
       updatedAt: conversation.updatedAt,
     }));
+
+    return conversations;
   }
 
   async getConversationById(
     conversationId: string,
     orgId: string,
   ) {
+    if (!this.isValidObjectId(conversationId)) {
+      throw new NotAcceptableException(
+        'Invalid conversation ID',
+      );
+    }
     const conversation =
       await this.conversationModel
         .findById(conversationId)
@@ -135,14 +150,77 @@ export class ConversationsService {
       conversationId: conversation._id.toString(),
       status: conversation.status,
       visitorId: conversation.visitorId,
+      agentId: conversation.agentId
+        ? conversation.agentId.toString()
+        : null,
       orgId: conversation.orgId,
     };
   }
 
+  // this is for the agent to join the conversation, we will set the status to open if it is not already open, and assign the primary agent to the conversation. We can extend this in the future to support multiple agents if needed.
+  // -- for now this does an idempotent update, if the agent is already assigned to the conversation, it will not update the conversation again, but it will return a success message.
   async agentJoinConversation(
     conversationId: string,
     agentId: string,
+    orgId: string,
   ) {
-    return {};
+    if (!this.isValidObjectId(orgId)) {
+      throw new NotAcceptableException(
+        'Invalid organization ID',
+      );
+    }
+    // check if the conversation exists and belongs to the organization
+    const conversation =
+      await this.getConversationById(
+        conversationId,
+        orgId,
+      );
+
+    if (
+      conversation.agentId &&
+      conversation.agentId.toString() === agentId
+    ) {
+      // Agent is already assigned to the conversation, return success message
+      return {
+        message: `Agent ${agentId} is already assigned to conversation ${conversationId}`,
+      };
+    }
+
+    // check if the agent exists and belongs to the organization
+    const agent =
+      await this.agentService.getAgentById(
+        agentId,
+        orgId,
+      );
+
+    // logic to add the agent to the conversation (e.g., update conversation record, notify participants, etc.) also make status to open if it is not already open
+
+    const updatedConversation =
+      await this.conversationModel
+        .findByIdAndUpdate(
+          { _id: conversation.conversationId },
+          {
+            // $addToSet: { agentId: agent._id }, // TODO:  Assuming conversation schema has an array field 'agentIds' to track agents in the conversation will be implemented in the future if we want to support multiple agents in a conversation, for now we will just track the primary agent in the 'agentId' field and update it if a new agent joins. We can extend this in the future to support multiple agents if needed.
+            $set: {
+              status: 'open',
+              agentId: agent._id,
+            }, // Set status to open if not already open & assign the primary agent to the conversation
+          },
+          { new: true },
+        )
+        .exec();
+
+    if (!updatedConversation) {
+      throw new NotFoundException(
+        'Failed to update conversation with agent',
+      );
+    }
+
+    // TODO: Implement notification logic to inform the visitor and other agents in the conversation about the new agent joining (e.g., via WebSocket events)
+    //-- using email or in-app notifications
+    // if user is online, send in-app notification, if user is offline, send email notification
+    return {
+      message: `Agent ${agent.agentName} joined conversation ${conversationId} successfully`,
+    };
   }
 }

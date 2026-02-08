@@ -24,7 +24,7 @@ export const AgentSchema = new Schema(
     },
     role: {
       type: String,
-      enum: ['admin', 'agent'],
+      enum: ['admin', 'agent'], // TODO: for future use if we want to have different roles for agents, currently all agents will have 'agent' role and only the creator of the org will have 'admin' role, but we can expand this in the future for support-agent, supervisor, etc.
       default: 'agent',
     },
   },

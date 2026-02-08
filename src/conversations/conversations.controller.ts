@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Logger,
+  Post,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -90,6 +91,23 @@ export class ConversationsController {
 
     return this.conversationsService.getConversationById(
       id,
+      request.user?.orgId || 'unknown_org',
+    );
+  }
+
+  @Post(':id/agents/:agentId')
+  @UseGuards(AuthGuard('jwt')) // Add appropriate guards if needed
+  async agentJoinConversation(
+    @Req() request: Request,
+  ) {
+    const { id, agentId } = request.params;
+    this.logger.log(
+      `Agent ${agentId} joining conversation with ID: ${id}`,
+    );
+
+    return this.conversationsService.agentJoinConversation(
+      id,
+      agentId,
       request.user?.orgId || 'unknown_org',
     );
   }
