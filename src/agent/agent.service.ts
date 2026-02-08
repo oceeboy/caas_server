@@ -136,7 +136,12 @@ export class AgentService {
         'Agent not found',
       );
     }
-    return agent;
+    return {
+      agentId: String(agent._id),
+      agentName: agent.agentName,
+      agentEmail: agent.agentEmail,
+      role: agent.role,
+    };
   }
 
   // ==============================================================
@@ -205,7 +210,14 @@ export class AgentService {
       .select('-handleBy -orgId -__v') // exclude sensitive fields
       .lean()
       .exec();
-    return agents;
+
+    const agentsMapped = agents.map((agent) => ({
+      agentId: String(agent._id),
+      agentName: agent.agentName,
+      agentEmail: agent.agentEmail,
+      role: agent.role,
+    }));
+    return agentsMapped;
   }
 }
 

@@ -192,7 +192,14 @@ export class ConversationsService {
         agentId,
         orgId,
       );
-
+    // this agent join conversation logic will be used when an agent accepts a conversation from the queue or when an agent is manually assigned to a conversation by another agent or admin, it will update the conversation record with the assigned agent and set the status to open if it is not already open, this will allow the agent to start interacting with the visitor in that conversation. We can also implement additional logic here to handle notifications to the visitor and other agents in the conversation about the new agent joining, for example by emitting WebSocket events or sending email notifications.
+    /**
+     * TODO: Agent Activity Tracking: We can implement logic to track agent activity within the conversation, such as when they join, leave, or send messages. This can be useful for analytics and performance monitoring.
+     * Agent Assignment Logic: In the future, we can enhance this method to support more complex agent assignment logic, such as load balancing between agents, skill-based routing, or allowing multiple agents to join the same conversation for collaboration.
+     * Notification System: Implement a notification system to inform the visitor and other agents in the conversation about the new agent joining. This can be done through WebSocket events for real-time updates or email notifications for offline users.
+     * Conversation Status Management: Ensure that the conversation status is updated appropriately when an agent joins. For example, if the conversation was in a 'pending' state waiting for an agent, it should be updated to 'open' once an agent joins. We can also implement additional status states in the future, such as 'escalated' or 'on-hold', depending on the needs of the application.
+     * Reason for Agent Joining: We can also consider implementing logic to capture the reason for an agent joining a conversation, such as whether they accepted it from a queue, were manually assigned, or joined for collaboration. This information can be useful for analytics and improving the agent assignment process in the future.
+     */
     // logic to add the agent to the conversation (e.g., update conversation record, notify participants, etc.) also make status to open if it is not already open
 
     const updatedConversation =
@@ -203,7 +210,7 @@ export class ConversationsService {
             // $addToSet: { agentId: agent._id }, // TODO:  Assuming conversation schema has an array field 'agentIds' to track agents in the conversation will be implemented in the future if we want to support multiple agents in a conversation, for now we will just track the primary agent in the 'agentId' field and update it if a new agent joins. We can extend this in the future to support multiple agents if needed.
             $set: {
               status: 'open',
-              agentId: agent._id,
+              agentId: agent.agentId,
             }, // Set status to open if not already open & assign the primary agent to the conversation
           },
           { new: true },
