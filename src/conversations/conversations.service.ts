@@ -181,9 +181,12 @@ export class ConversationsService {
       conversation.agentId.toString() === agentId
     ) {
       // Agent is already assigned to the conversation, return success message
-      return {
-        message: `Agent ${agentId} is already assigned to conversation ${conversationId}`,
-      };
+      this.logger.warn(
+        `Agent ${agentId} is already assigned to conversation ${conversationId}`,
+      );
+      throw new NotAcceptableException(
+        `Agent ${agentId} is already assigned to conversation ${conversationId}`,
+      );
     }
 
     // check if the agent exists and belongs to the organization
