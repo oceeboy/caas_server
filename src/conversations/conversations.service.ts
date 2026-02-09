@@ -182,9 +182,9 @@ export class ConversationsService {
       this.logger.warn(
         `Agent ${agentId} is already assigned to conversation ${conversationId}`,
       );
-      throw new NotAcceptableException(
-        `Agent you have joined this conversation`,
-      );
+      return {
+        message: `Agent you already joined`,
+      };
     }
 
     // check if the agent exists and belongs to the organization
