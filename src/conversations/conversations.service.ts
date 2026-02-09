@@ -185,7 +185,7 @@ export class ConversationsService {
         `Agent ${agentId} is already assigned to conversation ${conversationId}`,
       );
       throw new NotAcceptableException(
-        `Agent ${agentId} is already assigned to conversation ${conversationId}`,
+        `Agent you have joined this conversation`,
       );
     }
 

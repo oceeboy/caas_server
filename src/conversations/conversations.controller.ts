@@ -1,7 +1,9 @@
 import {
+  Body,
   Controller,
   Get,
   Logger,
+  NotFoundException,
   Post,
   Req,
   UseGuards,
@@ -10,6 +12,7 @@ import { ConversationsService } from './conversations.service';
 import type { Request } from 'express';
 
 import { AuthGuard } from '@nestjs/passport';
+import { JoinAgentConversationDto } from './dtos';
 
 @Controller('conversations')
 export class ConversationsController {
@@ -28,10 +31,9 @@ export class ConversationsController {
   ) {
     const orgId = request.user?.orgId;
     if (!orgId) {
-      this.logger.warn(
-        'Missing orgId in user payload',
+      throw new NotFoundException(
+        'Organization not found',
       );
-      return [];
     }
 
     // Parse pagination and sorting from query params
@@ -95,18 +97,29 @@ export class ConversationsController {
     );
   }
 
-  @Post(':id/agents/:agentId')
+  @Post('join')
   @UseGuards(AuthGuard('jwt')) // Add appropriate guards if needed
   async agentJoinConversation(
+    @Body()
+    joinAgentConversationDto: JoinAgentConversationDto,
     @Req() request: Request,
   ) {
-    const { id, agentId } = request.params;
+    // const { id, agentId } = request.params;
+    const { agentId, conversationId } =
+      joinAgentConversationDto;
     this.logger.log(
-      `Agent ${agentId} joining conversation with ID: ${id}`,
+      `Agent ${agentId} joining conversation with ID: ${conversationId}`,
     );
 
+    const orgId = request.user?.orgId;
+    if (!orgId) {
+      throw new NotFoundException(
+        'Organization not found',
+      );
+    }
+
     return this.conversationsService.agentJoinConversation(
-      id,
+      conversationId,
       agentId,
       request.user?.orgId || 'unknown_org',
     );
