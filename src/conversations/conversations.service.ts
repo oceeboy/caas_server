@@ -121,8 +121,6 @@ export class ConversationsService {
       createdAt: conversation.createdAt,
       updatedAt: conversation.updatedAt,
     }));
-
-    return conversations;
   }
 
   async getConversationById(
