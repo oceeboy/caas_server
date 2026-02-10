@@ -152,6 +152,12 @@ export class AgentService {
   async startAgentSession(
     startAgentSession: StartAgentSession,
   ): Promise<{
+    agent: {
+      agentId: string;
+      agentEmail: string;
+      agentName: string;
+      role: string;
+    };
     token: string;
     message: string;
     expiresIn: number;
@@ -204,6 +210,7 @@ export class AgentService {
     }
 
     return {
+      agent: agent,
       token: token,
       expiresIn: 3600, // token expiration time in seconds
       message:
