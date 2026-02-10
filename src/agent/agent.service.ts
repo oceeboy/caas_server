@@ -3,6 +3,7 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  Logger,
   NotAcceptableException,
   NotFoundException,
 } from '@nestjs/common';
@@ -15,6 +16,7 @@ import {
 import { UsersService } from 'src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { StartAgentSession } from './dtos';
 
 @Injectable()
 export class AgentService {
@@ -29,7 +31,7 @@ export class AgentService {
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
-
+  private readonly logger = new Logger();
   /**
    *  in here is the business logic for agent management
    *  such as creating, updating, and deleting agents.
@@ -147,12 +149,71 @@ export class AgentService {
   // ==============================================================
   // Agent Session Management
   // ==============================================================
-  async startAgentSession() {
-    // Implementation for starting an agent session
+  async startAgentSession(
+    startAgentSession: StartAgentSession,
+  ): Promise<{
+    token: string;
+    message: string;
+    expiresIn: number;
+  }> {
+    // Implementation for starting an agent session this for now will neglect that agent session is meant to not be duplicated
+    const {
+      agentId,
+      orgId,
+      userAgent,
+      ipAddress,
+    } = startAgentSession;
+    this.logger.debug(
+      `content in the dto: ${JSON.stringify(startAgentSession)}`,
+    );
+    // ==== check if the agentId is a valid mongoose id
+    const agent = await this.getAgentById(
+      agentId,
+      orgId,
+    );
+
+    const agentSession =
+      new this.agentSessionModel({
+        agentId: agent.agentId,
+        orgId: orgId,
+        ipAddress: ipAddress || '',
+        userAgent: userAgent || '',
+      });
+    await agentSession.save();
+
+    const payload = {
+      sub: String(agent.agentId),
+      orgId: String(orgId),
+      sessionId: String(agentSession._id),
+      role: 'agent',
+    };
+
+    // token generation
+
+    const token = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>(
+        'VISITOR_JWT_SECRET', // using visitor jwt secret for agent for now since both have similar privileges
+      ),
+      expiresIn: '1h',
+    });
+
+    if (!token) {
+      throw new BadRequestException(
+        'Failed to start session',
+      );
+    }
+
+    return {
+      token: token,
+      expiresIn: 3600, // token expiration time in seconds
+      message:
+        'Agent session started successfully',
+    };
   }
 
   async endAgentSession() {
     // Implementation for ending an agent session
+    //
   }
 
   async registerAgent(dto: {

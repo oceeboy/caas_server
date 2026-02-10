@@ -7,11 +7,15 @@ import {
   Post,
   Req,
   UseGuards,
+  Param,
 } from '@nestjs/common';
 import { AgentService } from './agent.service';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request } from 'express';
-import { RegisterAgentDto } from './dtos';
+import {
+  RegisterAgentDto,
+  StartAgentSession,
+} from './dtos';
 
 @Controller('agent')
 export class AgentController {
@@ -127,5 +131,34 @@ export class AgentController {
       name: agentName,
       email: agentEmail,
     });
+  }
+
+  @Post('session/:id')
+  @UseGuards(AuthGuard('jwt'))
+  async startSessionAgent(
+    @Param('id') id: string,
+    @Ip() ipAddress: string,
+    @Req() request: Request,
+  ) {
+    const userAgent =
+      request.headers['user-agent'] || '';
+
+    const orgId = request.user?.orgId;
+    if (!orgId) {
+      throw new NotFoundException(
+        'Organization not found',
+      );
+    }
+
+    const payload: StartAgentSession = {
+      agentId: id,
+      ipAddress,
+      userAgent,
+      orgId: orgId.toString(),
+    };
+
+    return await this.agentService.startAgentSession(
+      payload,
+    );
   }
 }
